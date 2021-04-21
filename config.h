@@ -14,16 +14,18 @@
 enum {
 	DEFAULT,
 	BLUE,
+	GREEN,
 };
 
 static Color colors[] = {
 	[DEFAULT] = { .fg = -1,         .bg = -1, .fg256 = -1, .bg256 = -1, },
 	[BLUE]    = { .fg = COLOR_BLUE, .bg = -1, .fg256 = 68, .bg256 = -1, },
+	[GREEN]   = { .fg = COLOR_GREEN, .bg = -1, .fg256 = 76, .bg256 = -1, },
 };
 
 #define COLOR(c)        COLOR_PAIR(colors[c].pair)
 /* curses attributes for the currently focused window */
-#define SELECTED_ATTR   (COLOR(BLUE) | A_NORMAL)
+#define SELECTED_ATTR   (COLOR(GREEN) | A_NORMAL)
 /* curses attributes for normal (not selected) windows */
 #define NORMAL_ATTR     (COLOR(DEFAULT) | A_NORMAL)
 /* curses attributes for a window with pending urgent flag */
@@ -44,9 +46,9 @@ static Color colors[] = {
 /* scroll back buffer size in lines */
 #define SCROLL_HISTORY 500
 /* printf format string for the tag in the status bar */
-#define TAG_SYMBOL   "[%s]"
+#define TAG_SYMBOL   " %s "
 /* curses attributes for the currently selected tags */
-#define TAG_SEL      (COLOR(BLUE) | A_BOLD)
+#define TAG_SEL      (COLOR(GREEN) | A_BOLD)
 /* curses attributes for not selected tags which contain no windows */
 #define TAG_NORMAL   (COLOR(DEFAULT) | A_NORMAL)
 /* curses attributes for not selected tags which contain windows */
@@ -63,11 +65,12 @@ const char tags[][8] = { "1", "2", "3", "4", "5" };
 
 /* by default the first layout entry is used */
 static Layout layouts[] = {
-	{ "[]=", tile },
-	{ "+++", grid },
-	{ "TTT", bstack },
-	{ "[ ]", fullscreen },
+	{ " []= ", tile },
+	{ " +++ ", grid },
+	{ " TTT ", bstack },
+	{ " []  ", fullscreen },
 };
+
 
 #define MOD  CTRL('b')
 #define TAGKEYS(KEY,TAG) \

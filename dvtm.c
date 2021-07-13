@@ -358,7 +358,7 @@ drawbar(void) {
 		else if (occupied & (1 << i))
 			attrset(TAG_OCCUPIED);
 		else
-			attrset(TAG_NORMAL);
+            continue;
 		printw(TAG_SYMBOL, tags[i]);
 	}
 

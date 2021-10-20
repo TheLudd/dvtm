@@ -814,6 +814,9 @@ tagschanged() {
 		focus(NULL);
 		toggleminimize(NULL);
 	}
+	if (!nextvisible(clients)) {
+		create(NULL);
+	}
 	arrange();
 }
 
@@ -1063,6 +1066,8 @@ destroy(Client *c) {
 		if (next) {
 			focus(next);
 			toggleminimize(NULL);
+		} else if (clients) {
+			viewprevtag(NULL);
 		} else {
 			sel = NULL;
 		}

@@ -37,6 +37,7 @@
 # include <termios.h>
 #endif
 #include "vt.h"
+#include "uniqstringstack.c"
 
 #ifdef PDCURSES
 int ESCDELAY;
@@ -229,6 +230,8 @@ static unsigned int waw, wah, wax, way;
 static Client *clients = NULL;
 static char *title;
 static KeyCombo keys;
+
+static struct UniqueStack tagstack;
 
 #include "config.h"
 
@@ -917,6 +920,15 @@ view(const char *args[]) {
 		tagset[seltags] = newtagset;
 		tagschanged();
 	}
+	/* Check if input is a string of just one character and push it to the stack */
+	if(strlen(args[0]) == 1) {
+		char c[2];
+		c[0] = args[0][0];
+		c[1] = '\0';
+		/* stack_push(&tagstack, c); */
+		/* stack_print(&tagstack); */
+		printf("hej");
+	}
 }
 
 static void
@@ -1068,6 +1080,7 @@ destroy(Client *c) {
 			toggleminimize(NULL);
 		} else if (clients) {
 			viewprevtag(NULL);
+			/* view(stack_pop(&tagstack)); */
 		} else {
 			sel = NULL;
 		}
@@ -1901,6 +1914,10 @@ main(int argc, char *argv[]) {
 	unsigned int key_index = 0;
 	memset(keys, 0, sizeof(keys));
 	sigset_t emptyset, blockset;
+
+	stack_init(&tagstack);
+	stack_push(&tagstack, "1");
+	stack_print(&tagstack);
 
 	setenv("DVTM", VERSION, 1);
 	if (!parse_args(argc, argv)) {

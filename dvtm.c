@@ -905,7 +905,6 @@ toggleview(const char *args[]) {
 static void
 view(const char *args[]) {
 	int i;
-
 	unsigned int newtagset = bitoftag(args[0]) & TAGMASK;
 	if (tagset[seltags] != newtagset && newtagset) {
 		seltags ^= 1; /* toggle sel tagset */
@@ -922,12 +921,8 @@ view(const char *args[]) {
 	}
 	/* Check if input is a string of just one character and push it to the stack */
 	if(strlen(args[0]) == 1) {
-		char c[2];
-		c[0] = args[0][0];
-		c[1] = '\0';
-		/* stack_push(&tagstack, c); */
+		stack_push(&tagstack, *args);
 		/* stack_print(&tagstack); */
-		printf("hej");
 	}
 }
 
@@ -1080,7 +1075,9 @@ destroy(Client *c) {
 			toggleminimize(NULL);
 		} else if (clients) {
 			viewprevtag(NULL);
-			/* view(stack_pop(&tagstack)); */
+			/* stack_pop(&tagstack); */
+			/* stack_peek(&tagstack); */
+			/* view(stack_peek(&tagstack)); */
 		} else {
 			sel = NULL;
 		}
@@ -1916,8 +1913,7 @@ main(int argc, char *argv[]) {
 	sigset_t emptyset, blockset;
 
 	stack_init(&tagstack);
-	stack_push(&tagstack, "1");
-	stack_print(&tagstack);
+	/* stack_push(&tagstack, "1"); */
 
 	setenv("DVTM", VERSION, 1);
 	if (!parse_args(argc, argv)) {

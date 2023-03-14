@@ -264,6 +264,38 @@ static Register copyreg;
 static volatile sig_atomic_t running = true;
 static bool runinall = false;
 
+
+void unique_stack_print_to_file(struct UniqueStack *s) {
+    FILE *file = fopen("/tmp/log", "a");
+    if (file == NULL) {
+        fprintf(stderr, "Error: Could not open /tmp/log for writing\n");
+        return;
+    }
+
+    fprintf(file, "\nUnique Stack:\n");
+    for (int i = 0; i <= s->top; i++) {
+        fprintf(file, "  %s\n", s->data[i]);
+    }
+    fclose(file);
+}
+
+void write_to_log(const char *message) {
+	FILE *file;
+
+	// Open the file for appending. Use "a" to append to the file if it already exists.
+	file = fopen("/tmp/log", "a");
+	if (file == NULL) {
+		fprintf(stderr, "Error: Could not open the file for writing\n");
+		return;
+	}
+
+	// Write the message to the file
+	fprintf(file, "%s\n", message);
+
+	// Close the file
+	fclose(file);
+}
+
 static void
 eprint(const char *errstr, ...) {
 	va_list ap;
@@ -904,25 +936,38 @@ toggleview(const char *args[]) {
 
 static void
 view(const char *args[]) {
+	write_to_log("1");
 	int i;
+	write_to_log("2");
 	unsigned int newtagset = bitoftag(args[0]) & TAGMASK;
+	write_to_log("3");
 	if (tagset[seltags] != newtagset && newtagset) {
+		write_to_log("4");
 		seltags ^= 1; /* toggle sel tagset */
+		write_to_log("5");
 		pertag.prevtag = pertag.curtag;
+		write_to_log("6");
 		if(args[0] == NULL)
 			pertag.curtag = 0;
 		else {
 			for (i = 0; (i < LENGTH(tags)) && (tags[i] != args[0]); i++) ;
 			pertag.curtag = i + 1;
 		}
+		write_to_log("7");
 		setpertag();
+		write_to_log("8");
 		tagset[seltags] = newtagset;
+		write_to_log("9");
 		tagschanged();
+		write_to_log("10");
 	}
+	write_to_log("11");
 	/* Check if input is a string of just one character and push it to the stack */
-	if(strlen(args[0]) == 1) {
+	if(args[0] != NULL && strlen(args[0]) == 1) {
+		write_to_log("pushing");
 		stack_push(&tagstack, *args);
-		/* stack_print(&tagstack); */
+		write_to_log("pushed");
+		unique_stack_print_to_file(&tagstack);
 	}
 }
 
@@ -1062,6 +1107,13 @@ setup(void) {
 	sigaction(SIGPIPE, &sa, NULL);
 }
 
+void call_write_to_log_with_peek_result(struct UniqueStack *s) {
+    const char *peek_result = stack_peek(s);
+    char message[256];
+    snprintf(message, sizeof(message), "Intend to go to: %s\n", peek_result);
+    write_to_log(message);
+}
+
 static void
 destroy(Client *c) {
 	if (sel == c)
@@ -1074,10 +1126,12 @@ destroy(Client *c) {
 			focus(next);
 			toggleminimize(NULL);
 		} else if (clients) {
-			viewprevtag(NULL);
-			/* stack_pop(&tagstack); */
-			/* stack_peek(&tagstack); */
-			/* view(stack_peek(&tagstack)); */
+			write_to_log("popping");
+			stack_pop(&tagstack);
+			unique_stack_print_to_file(&tagstack);
+			call_write_to_log_with_peek_result(&tagstack);
+			/* viewprevtag(NULL); */
+			view(stack_peek(&tagstack));
 		} else {
 			sel = NULL;
 		}
@@ -1913,7 +1967,7 @@ main(int argc, char *argv[]) {
 	sigset_t emptyset, blockset;
 
 	stack_init(&tagstack);
-	/* stack_push(&tagstack, "1"); */
+	stack_push(&tagstack, "1");
 
 	setenv("DVTM", VERSION, 1);
 	if (!parse_args(argc, argv)) {

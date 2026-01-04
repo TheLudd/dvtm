@@ -234,6 +234,8 @@ static KeyCombo keys;
 
 typedef struct {
 	unsigned int curtag, prevtag;
+	unsigned int tagstack[LENGTH(tags)];
+	int tagstacksize;
 	int nmaster[LENGTH(tags) + 1];
 	float mfact[LENGTH(tags) + 1];
 	Layout *layout[LENGTH(tags) + 1];
@@ -301,6 +303,41 @@ static Client*
 nextvisible(Client *c) {
 	for (; c && !isvisible(c); c = c->next);
 	return c;
+}
+
+static bool
+taghasclients(unsigned int tagbit) {
+	for (Client *c = clients; c; c = c->next)
+		if (c->tags & tagbit)
+			return true;
+	return false;
+}
+
+static void
+tagstack_push(unsigned int tag) {
+	int i;
+	/* Remove if already in stack */
+	for (i = 0; i < pertag.tagstacksize; i++) {
+		if (pertag.tagstack[i] == tag) {
+			/* Shift remaining elements down */
+			for (; i < pertag.tagstacksize - 1; i++)
+				pertag.tagstack[i] = pertag.tagstack[i + 1];
+			pertag.tagstacksize--;
+			break;
+		}
+	}
+	/* Push to top */
+	pertag.tagstack[pertag.tagstacksize++] = tag;
+}
+
+static unsigned int
+tagstack_find_active(unsigned int exclude) {
+	for (int i = pertag.tagstacksize - 1; i >= 0; i--) {
+		unsigned int tag = pertag.tagstack[i];
+		if (tag != exclude && taghasclients(1 << (tag - 1)))
+			return tag;
+	}
+	return 0;
 }
 
 static void
@@ -913,6 +950,8 @@ view(const char *args[]) {
 			for (i = 0; (i < LENGTH(tags)) && (tags[i] != args[0]); i++) ;
 			pertag.curtag = i + 1;
 		}
+		if (pertag.curtag > 0)
+			tagstack_push(pertag.curtag);
 		setpertag();
 		tagset[seltags] = newtagset;
 		tagschanged();
@@ -984,6 +1023,8 @@ initpertag(void) {
 	int i;
 
 	pertag.curtag = pertag.prevtag = 1;
+	pertag.tagstacksize = 1;
+	pertag.tagstack[0] = 1;
 	for(i=0; i <= LENGTH(tags); i++) {
 		pertag.nmaster[i] = screen.nmaster;
 		pertag.mfact[i] = screen.mfact;
@@ -1067,17 +1108,28 @@ destroy(Client *c) {
 			focus(next);
 			toggleminimize(NULL);
 		} else if (clients) {
-			viewprevtag(NULL);
+			unsigned int nexttag = tagstack_find_active(pertag.curtag);
+			if (nexttag) {
+				const char *tagname = tags[nexttag - 1];
+				/* Clean up window before switching view */
+				werase(c->window);
+				delwin(c->window);
+				c->window = NULL;
+				view(&tagname);
+				redraw(NULL);
+			}
 		} else {
 			sel = NULL;
 		}
 	}
 	if (lastsel == c)
 		lastsel = NULL;
-	werase(c->window);
-	wnoutrefresh(c->window);
+	if (c->window) {
+		werase(c->window);
+		wnoutrefresh(c->window);
+		delwin(c->window);
+	}
 	vt_destroy(c->term);
-	delwin(c->window);
 	if (!clients && LENGTH(actions)) {
 		if (!strcmp(c->cmd, shell))
 			quit(NULL);
